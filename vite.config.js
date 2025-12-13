@@ -7,75 +7,38 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
+      includeAssets: ['favicon.ico', 'apple-touch-icon.png'],
       manifest: {
-        name: '加密货币市场分析器',
-        short_name: 'CryptoRank',
-        description: '实时加密货币市场数据和链上分析',
-        theme_color: '#16213e',
-        background_color: '#1a1a2e',
+        name: 'Cryptocurrency PWA',
+        short_name: 'CryptoPWA',
+        description: 'A Progressive Web App for cryptocurrency tracking',
+        theme_color: '#4361ee',
+        background_color: '#ffffff',
         display: 'standalone',
         orientation: 'portrait',
         scope: '/',
         start_url: '/',
         icons: [
           {
-            src: '/pwa-192x192.png',
+            src: 'pwa-192x192.png',
             sizes: '192x192',
-            type: 'image/png',
-            purpose: 'any'
+            type: 'image/png'
           },
           {
-            src: '/pwa-512x512.png',
+            src: 'pwa-512x512.png',
             sizes: '512x512',
-            type: 'image/png',
-            purpose: 'any'
-          },
-          {
-            src: '/pwa-512x512.png',
-            sizes: '512x512',
-            type: 'image/png',
-            purpose: 'maskable'
+            type: 'image/png'
           }
         ]
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-        runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/api\.coingecko\.com\/api\/v3\/.*/i,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'coingecko-api-cache',
-              expiration: {
-                maxEntries: 100,
-                maxAgeSeconds: 60 * 60 * 24
-              },
-              networkTimeoutSeconds: 10
-            }
-          },
-          {
-            urlPattern: /^https:\/\/assets\.coingecko\.com\/.*/i,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'coingecko-images-cache',
-              expiration: {
-                maxEntries: 200,
-                maxAgeSeconds: 60 * 60 * 24 * 7
-              }
-            }
-          }
-        ]
+        globPatterns: ['**/*.{js,css,html,ico,png,svg}']
       }
     })
   ],
   server: {
     host: '0.0.0.0',
-    port: 5173,
-    open: true
+    port: 5173
   },
-  build: {
-    outDir: 'dist',
-    sourcemap: true
-  }
+  base: './'
 })

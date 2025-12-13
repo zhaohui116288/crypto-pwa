@@ -1,5 +1,5 @@
- import React, { useState, useEffect } from 'react'
-import TraditionalMarket from './components/MarketRanking/TraditionalMarket'
+import React, { useState, useEffect } from 'react'
+import CryptoRankings from './components/MarketRanking/CryptoRankings'
 import OnChainRanking from './components/MarketRanking/OnChainRanking'
 import NewsModule from './components/News/NewsModule'
 import SettingsModule from './components/Settings/SettingsModule'
@@ -7,11 +7,12 @@ import Navigation from './components/Navigation/Navigation'
 import './styles/main.css'
 
 const App = () => {
-  const [activeModule, setActiveModule] = useState('traditional')
+  const [activeModule, setActiveModule] = useState('market')
   const [isOnline, setIsOnline] = useState(navigator.onLine)
   const [appTheme, setAppTheme] = useState(() => {
     return localStorage.getItem('app-theme') || 'auto'
   })
+  const [timestamp, setTimestamp] = useState(new Date())
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true)
@@ -47,17 +48,25 @@ const App = () => {
     return () => mediaQuery.removeEventListener('change', handleChange)
   }, [appTheme])
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTimestamp(new Date())
+    }, 60000)
+
+    return () => clearInterval(interval)
+  }, [])
+
   const handleThemeChange = (theme) => {
     setAppTheme(theme)
     localStorage.setItem('app-theme', theme)
   }
 
   const modules = {
-    traditional: {
-      id: 'traditional',
-      label: '传统市场',
-      icon: '📊',
-      component: <TraditionalMarket />
+    market: {
+      id: 'market',
+      label: '市场排名',
+      icon: '📈',
+      component: <CryptoRankings />
     },
     onchain: {
       id: 'onchain',
@@ -81,13 +90,18 @@ const App = () => {
 
   return (
     <div className="app-container">
-      {!isOnline && (
-        <div className="offline-banner">
-          ⚠️ 当前处于离线模式，显示最后缓存数据
-        </div>
-      )}
-
+      <Navigation
+        activeModule={activeModule}
+        setActiveModule={setActiveModule}
+      />
+      
       <main className="main-content">
+        {!isOnline && (
+          <div className="offline-banner">
+            ⚠️ 当前处于离线模式，显示最后缓存数据
+          </div>
+        )}
+
         <div className="module-header">
           <h1>{modules[activeModule].label}</h1>
           <span className="module-icon">{modules[activeModule].icon}</span>
@@ -96,24 +110,17 @@ const App = () => {
         <div className="module-content">
           {modules[activeModule].component}
         </div>
-      </main>
 
-      <Navigation
-        activeModule={activeModule}
-        modules={Object.values(modules)}
-        onModuleChange={setActiveModule}
-      />
-    {/* 新增：最后更新时间戳 */}
-<div style={{
-    textAlign: 'center',
-    marginTop: '2rem',
-    padding: '1rem',
-    fontSize: '0.9rem',
-    color: '#666',
-    borderTop: '1px solid var(--border-color)'
-}}>
-    页面最后更新于: {new Date().toLocaleString()}
-</div>
+        <div className="timestamp">
+          页面最后同步: {timestamp.toLocaleString('zh-CN', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+          })}
+        </div>
+      </main>
     </div>
   )
 }

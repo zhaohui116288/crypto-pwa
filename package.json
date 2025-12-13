@@ -1,13 +1,14 @@
  {
   "name": "crypto-pwa",
+  "version": "0.0.0",
   "private": true,
-  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite --host",
     "build": "vite build",
-    "preview": "vite preview --host",
-    "deploy": "npm run build && gh-pages -d dist"
+    "preview": "vite preview",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d dist"
   },
   "dependencies": {
     "react": "^18.2.0",
@@ -19,6 +20,5 @@
     "@vitejs/plugin-react": "^4.0.0",
     "vite": "^4.4.0",
     "vite-plugin-pwa": "^0.16.0"
-  },
-  "homepage": "https://yourusername.github.io/crypto-pwa"
+  }
 }

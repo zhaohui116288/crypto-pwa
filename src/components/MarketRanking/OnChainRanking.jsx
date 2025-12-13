@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+ import React, { useState, useEffect, useCallback } from 'react'
 
 const OnChainRanking = () => {
   const [activeMetric, setActiveMetric] = useState('active_addresses')
@@ -11,26 +11,26 @@ const OnChainRanking = () => {
     { 
       id: 'active_addresses', 
       label: '活跃地址数', 
-      description: '24小时链上活跃地址数量',
-      icon: '👥'
+      description: '24小时链上活跃地址数量', 
+      icon: '👥' 
     },
     { 
       id: 'transaction_count', 
       label: '交易笔数', 
-      description: '24小时链上交易数量',
-      icon: '🔄'
+      description: '24小时链上交易数量', 
+      icon: '🔄' 
     },
     { 
       id: 'gas_used', 
       label: 'Gas消耗', 
-      description: '网络燃料消耗量',
-      icon: '⛽'
+      description: '网络燃料消耗量', 
+      icon: '⛽' 
     },
     { 
       id: 'nft_volume', 
       label: 'NFT交易量', 
-      description: 'NFT市场交易额',
-      icon: '🖼️'
+      description: 'NFT市场交易额', 
+      icon: '🖼️' 
     }
   ]
 
@@ -56,18 +56,42 @@ const OnChainRanking = () => {
 
   useEffect(() => {
     loadData()
-    
     const interval = setInterval(loadData, 60000)
     return () => clearInterval(interval)
   }, [loadData])
 
   const getDemoData = (metric) => {
     const baseData = [
-      { id: 'bitcoin', name: 'Bitcoin', symbol: 'btc', image: 'https://assets.coingecko.com/coins/images/1/large/bitcoin.png' },
-      { id: 'ethereum', name: 'Ethereum', symbol: 'eth', image: 'https://assets.coingecko.com/coins/images/279/large/ethereum.png' },
-      { id: 'binancecoin', name: 'BNB', symbol: 'bnb', image: 'https://assets.coingecko.com/coins/images/825/large/bnb-icon2_2x.png' },
-      { id: 'solana', name: 'Solana', symbol: 'sol', image: 'https://assets.coingecko.com/coins/images/4128/large/solana.png' },
-      { id: 'cardano', name: 'Cardano', symbol: 'ada', image: 'https://assets.coingecko.com/coins/images/975/large/cardano.png' }
+      { 
+        id: 'bitcoin', 
+        name: 'Bitcoin', 
+        symbol: 'btc', 
+        image: 'https://assets.coingecko.com/coins/images/1/large/bitcoin.png' 
+      },
+      { 
+        id: 'ethereum', 
+        name: 'Ethereum', 
+        symbol: 'eth', 
+        image: 'https://assets.coingecko.com/coins/images/279/large/ethereum.png' 
+      },
+      { 
+        id: 'binancecoin', 
+        name: 'BNB', 
+        symbol: 'bnb', 
+        image: 'https://assets.coingecko.com/coins/images/825/large/bnb-icon2_2x.png' 
+      },
+      { 
+        id: 'solana', 
+        name: 'Solana', 
+        symbol: 'sol', 
+        image: 'https://assets.coingecko.com/coins/images/4128/large/solana.png' 
+      },
+      { 
+        id: 'cardano', 
+        name: 'Cardano', 
+        symbol: 'ada', 
+        image: 'https://assets.coingecko.com/coins/images/975/large/cardano.png' 
+      }
     ]
 
     const metricRanges = {
@@ -86,7 +110,7 @@ const OnChainRanking = () => {
       
       const trends = ['up', 'down', 'stable', 'volatile']
       const trend = trends[Math.floor(Math.random() * trends.length)]
-      
+
       return {
         ...coin,
         value,
@@ -119,13 +143,16 @@ const OnChainRanking = () => {
     return trends[trend] || '📊'
   }
 
+  const handleImageError = (e) => {
+    e.target.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="%23666"/></svg>'
+  }
+
   return (
     <div className="on-chain-ranking">
       <div className="on-chain-header">
         <div className="data-status">
-          <span className="status-label">数据源:</span>
-          <span className={`status-value ${dataSource}`}>
-            {dataSource === 'api' ? '实时API' : '演示数据'}
+          <span className="status-value">
+            数据源: {dataSource === 'api' ? '实时API' : '演示数据'}
           </span>
           {lastUpdated && (
             <span className="update-time">
@@ -142,13 +169,23 @@ const OnChainRanking = () => {
             className={`metric-btn ${activeMetric === metric.id ? 'active' : ''}`}
             onClick={() => setActiveMetric(metric.id)}
           >
-            <span className="metric-btn-icon">{metric.icon}</span>
-            <span className="metric-btn-label">{metric.label}</span>
+            {metric.icon}
+            {metric.label}
           </button>
         ))}
       </div>
 
-      <div className="on-chain-content">
+      <div className="metric-info">
+        <h3>
+          {metrics.find(m => m.id === activeMetric)?.icon}
+          {metrics.find(m => m.id === activeMetric)?.label}
+        </h3>
+        <p className="metric-description">
+          {metrics.find(m => m.id === activeMetric)?.description}
+        </p>
+      </div>
+
+      <div className="on-chain-list">
         {loading ? (
           <div className="loading-state">
             <div className="spinner"></div>
@@ -156,67 +193,50 @@ const OnChainRanking = () => {
           </div>
         ) : (
           <>
-            <div className="metric-info">
-              <h3>
-                <span className="metric-icon">
-                  {metrics.find(m => m.id === activeMetric)?.icon}
-                </span>
-                {metrics.find(m => m.id === activeMetric)?.label}
-              </h3>
-              <p className="metric-description">
-                {metrics.find(m => m.id === activeMetric)?.description}
-              </p>
-            </div>
-
-            <div className="on-chain-list">
-              {data.map((item, index) => (
-                <div key={item.id} className="on-chain-item">
-                  <div className="rank-badge">
-                    <span className="rank-number">{index + 1}</span>
-                  </div>
-                  
-                  <div className="coin-info">
-                    <img 
-                      src={item.image} 
-                      alt={item.name}
-                      className="coin-icon"
-                      onError={(e) => {
-                        e.target.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="%234361ee"/></svg>'
-                      }}
-                    />
-                    <div className="coin-details">
-                      <span className="coin-name">{item.name}</span>
-                      <span className="coin-symbol">{item.symbol.toUpperCase()}</span>
-                    </div>
-                  </div>
-                  
-                  <div className="metric-value">
-                    <div className="value-main">
-                      {formatMetricValue(item.value, activeMetric)}
-                    </div>
-                    <div className="value-change">
-                      {item.change !== undefined && (
-                        <span className={`change ${item.change >= 0 ? 'positive' : 'negative'}`}>
-                          {item.change >= 0 ? '↑' : '↓'} {Math.abs(item.change).toFixed(1)}%
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div className="trend-indicator">
-                    {renderTrendIndicator(item.trend)}
+            {data.map((item, index) => (
+              <div key={item.id} className="on-chain-item">
+                <div className="rank-badge">{index + 1}</div>
+                
+                <div className="coin-info">
+                  <img 
+                    src={item.image} 
+                    alt={item.name}
+                    className="coin-icon"
+                    onError={handleImageError}
+                  />
+                  <div className="coin-details">
+                    <span className="coin-name">{item.name}</span>
+                    <span className="coin-symbol">{item.symbol.toUpperCase()}</span>
                   </div>
                 </div>
-              ))}
-            </div>
+                
+                <div className="metric-value">
+                  <div className="value-main">
+                    {formatMetricValue(item.value, activeMetric)}
+                  </div>
+                  {item.change !== undefined && (
+                    <div className={`value-change ${item.change >= 0 ? 'positive' : 'negative'}`}>
+                      {item.change >= 0 ? '↑' : '↓'} {Math.abs(item.change).toFixed(1)}%
+                    </div>
+                  )}
+                </div>
+                
+                <div className="trend-indicator">
+                  {renderTrendIndicator(item.trend)}
+                </div>
+              </div>
+            ))}
           </>
         )}
       </div>
-      
+
       {dataSource === 'demo' && (
         <div className="demo-notice">
           <p>⚠️ 当前显示演示数据，真实API正在调试中</p>
-          <button onClick={loadData} className="retry-btn">
+          <button 
+            className="retry-api-btn"
+            onClick={() => console.log('尝试连接真实API...')}
+          >
             重试连接真实API
           </button>
         </div>
