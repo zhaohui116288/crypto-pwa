@@ -1,5 +1,7 @@
- import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { fetchCryptoNews, getNewsCategories, filterNewsByCategory } from '../../services/api/news'
+// 导入翻译服务
+import { translateText, mockTranslateText } from '../../services/api/translation'
 
 const NewsModule = () => {
   const [news, setNews] = useState([])
@@ -11,6 +13,11 @@ const NewsModule = () => {
   const [autoRefresh, setAutoRefresh] = useState(false)
   const [sources, setSources] = useState([])
   const [stats, setStats] = useState({ total: 0, sources: 0 })
+  
+  // 新增：翻译相关状态
+  const [translatingId, setTranslatingId] = useState(null)
+  const [translatedItems, setTranslatedItems] = useState({})
+  const [showTranslated, setShowTranslated] = useState({})
 
   const categories = getNewsCategories()
 
@@ -42,6 +49,10 @@ const NewsModule = () => {
       setFilteredNews(filterNewsByCategory(newsData, activeCategory))
       setLastUpdated(new Date())
       
+      // 重置翻译状态
+      setTranslatedItems({})
+      setShowTranslated({})
+      
       console.log('新闻获取成功:', newsData.length, '条')
       
     } catch (err) {
@@ -51,6 +62,72 @@ const NewsModule = () => {
       if (showLoading) setLoading(false)
     }
   }, [activeCategory])
+
+  // 新增：处理单条新闻翻译
+  const handleTranslateNews = async (newsItem) => {
+    const { id, title, description } = newsItem
+    
+    // 如果已经翻译过，直接切换显示状态
+    if (translatedItems[id]) {
+      setShowTranslated(prev => ({
+        ...prev,
+        [id]: !prev[id]
+      }))
+      return
+    }
+    
+    // 开始翻译
+    setTranslatingId(id)
+    
+    try {
+      // 并行翻译标题和描述
+      const [translatedTitle, translatedDescription] = await Promise.all([
+        translateText(title),
+        description ? translateText(description) : Promise.resolve('')
+      ])
+      
+      // 保存翻译结果
+      setTranslatedItems(prev => ({
+        ...prev,
+        [id]: {
+          title: translatedTitle,
+          description: translatedDescription
+        }
+      }))
+      
+      // 自动显示翻译结果
+      setShowTranslated(prev => ({
+        ...prev,
+        [id]: true
+      }))
+      
+      console.log(`新闻 ${id} 翻译完成`)
+      
+    } catch (err) {
+      console.error(`翻译新闻 ${id} 失败:`, err)
+      
+      // 提供用户反馈
+      if (err.message.includes('网络错误') || err.message.includes('超时')) {
+        alert('翻译失败：请检查网络连接后重试')
+      } else {
+        alert('翻译服务暂时不可用，请稍后重试')
+      }
+    } finally {
+      setTranslatingId(null)
+    }
+  }
+
+  // 新增：判断是否需要显示翻译按钮（仅英文内容显示）
+  const shouldShowTranslateButton = (text) => {
+    if (!text || typeof text !== 'string') return false
+    
+    // 简单检测是否为英文内容（包含英文字母）
+    const hasEnglishChars = /[a-zA-Z]/.test(text)
+    // 中文字符比例很低（小于10%）
+    const chineseCharRatio = (text.match(/[\u4e00-\u9fa5]/g) || []).length / text.length
+    
+    return hasEnglishChars && chineseCharRatio < 0.1
+  }
 
   useEffect(() => {
     if (news.length > 0) {
@@ -167,6 +244,10 @@ const NewsModule = () => {
           <span className="stat-item">📊 共 {stats.total} 条新闻</span>
           <span className="stat-item">🏷️ {activeCategory}</span>
           <span className="stat-item">🔄 自动刷新: {autoRefresh ? '开' : '关'}</span>
+          {/* 新增：翻译状态统计 */}
+          <span className="stat-item">
+            🌐 翻译: {Object.keys(translatedItems).length} 条已翻译
+          </span>
         </div>
       )}
 
@@ -200,58 +281,112 @@ const NewsModule = () => {
           </div>
         ) : (
           <div className="news-grid">
-            {filteredNews.map((item) => (
-              <div 
-                key={item.id} 
-                className="news-card"
-                onClick={() => {
-                  if (item.url && !item.url.includes('#')) {
-                    window.open(item.url, '_blank', 'noopener,noreferrer')
-                  }
-                }}
-                title={item.url ? '点击查看原文' : '无原文链接'}
-              >
-                <div className="news-image">
-                  <img 
-                    src={item.image} 
-                    alt={item.title}
-                    onError={handleImageError}
-                    loading="lazy"
-                  />
-                  <div className="image-overlay">
-                    <span className="news-source">{item.source}</span>
-                    <span className="news-type">{getTypeIcon(item.type)}</span>
-                  </div>
-                </div>
+            {filteredNews.map((item) => {
+              const isTranslating = translatingId === item.id
+              const hasTranslation = !!translatedItems[item.id]
+              const showTranslation = showTranslated[item.id]
+              
+              // 判断是否需要显示翻译按钮
+              const showTranslateBtn = 
+                shouldShowTranslateButton(item.title) || 
+                shouldShowTranslateButton(item.description)
+              
+              // 确定显示的内容
+              const displayTitle = showTranslation && translatedItems[item.id]?.title 
+                ? translatedItems[item.id].title 
+                : item.title
                 
-                <div className="news-body">
-                  <h3 className="news-title">{item.title}</h3>
-                  <p className="news-description">{item.description}</p>
+              const displayDescription = showTranslation && translatedItems[item.id]?.description 
+                ? translatedItems[item.id].description 
+                : item.description
+
+              return (
+                <div 
+                  key={item.id} 
+                  className="news-card"
+                  onClick={(e) => {
+                    // 防止点击翻译按钮时触发卡片点击
+                    if (e.target.closest('.translate-btn')) {
+                      return
+                    }
+                    if (item.url && !item.url.includes('#')) {
+                      window.open(item.url, '_blank', 'noopener,noreferrer')
+                    }
+                  }}
+                  title={item.url ? '点击查看原文' : '无原文链接'}
+                >
+                  <div className="news-image">
+                    <img 
+                      src={item.image} 
+                      alt={displayTitle}
+                      onError={handleImageError}
+                      loading="lazy"
+                    />
+                    <div className="image-overlay">
+                      <span className="news-source">{item.source}</span>
+                      <span className="news-type">{getTypeIcon(item.type)}</span>
+                    </div>
+                  </div>
                   
-                  <div className="news-meta">
-                    <div className="meta-left">
-                      <span className="news-time">{formatTime(item.published_at)}</span>
-                      {item.type && (
-                        <span className="news-type-label">{item.type === 'discussion' ? '社区讨论' : '新闻文章'}</span>
+                  <div className="news-body">
+                    <h3 className="news-title">
+                      {displayTitle}
+                      {/* 翻译状态指示器 */}
+                      {hasTranslation && showTranslation && (
+                        <span className="translation-badge" title="已翻译">🌐</span>
                       )}
+                    </h3>
+                    <p className="news-description">{displayDescription}</p>
+                    
+                    <div className="news-meta">
+                      <div className="meta-left">
+                        <span className="news-time">{formatTime(item.published_at)}</span>
+                        {item.type && (
+                          <span className="news-type-label">{item.type === 'discussion' ? '社区讨论' : '新闻文章'}</span>
+                        )}
+                        
+                        {/* 翻译按钮 */}
+                        {showTranslateBtn && (
+                          <button 
+                            className={`translate-btn ${isTranslating ? 'translating' : ''}`}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleTranslateNews(item)
+                            }}
+                            disabled={isTranslating}
+                            title={hasTranslation 
+                              ? (showTranslation ? '显示原文' : '显示翻译') 
+                              : '翻译成中文'}
+                          >
+                            {isTranslating ? (
+                              <>
+                                <span className="translate-spinner"></span>
+                                翻译中...
+                              </>
+                            ) : hasTranslation ? (
+                              showTranslation ? '显示原文' : '显示翻译'
+                            ) : '翻译成中文'}
+                          </button>
+                        )}
+                      </div>
+                      
+                      <div className="news-tags">
+                        {item.categories?.slice(0, 2).map((cat, idx) => (
+                          <span key={idx} className="news-tag">{cat}</span>
+                        ))}
+                      </div>
                     </div>
                     
-                    <div className="news-tags">
-                      {item.categories?.slice(0, 2).map((cat, idx) => (
-                        <span key={idx} className="news-tag">{cat}</span>
-                      ))}
-                    </div>
+                    {item.upvotes && (
+                      <div className="news-stats">
+                        <span className="stat upvotes">⬆️ {item.upvotes}</span>
+                        <span className="stat comments">💬 {item.comments}</span>
+                      </div>
+                    )}
                   </div>
-                  
-                  {item.upvotes && (
-                    <div className="news-stats">
-                      <span className="stat upvotes">⬆️ {item.upvotes}</span>
-                      <span className="stat comments">💬 {item.comments}</span>
-                    </div>
-                  )}
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         )}
       </div>
@@ -260,10 +395,13 @@ const NewsModule = () => {
         <div className="data-notice">
           <small>数据来源: CoinDesk • CoinTelegraph • 金色财经 • Reddit • Decrypt</small>
           <small>📱 点击新闻卡片查看原文 | 所有源均无需API Key</small>
+          {/* 新增翻译服务说明 */}
+          <small>🌐 翻译服务: Microsoft Translator (免费版)</small>
         </div>
         {filteredNews.length > 0 && (
           <div className="news-tip">
             <small>💡 提示: {activeCategory === 'All' ? '使用分类标签筛选特定内容' : '切换到"All"查看所有新闻'}</small>
+            <small>🌐 点击"翻译成中文"按钮将英文新闻翻译为中文</small>
           </div>
         )}
       </div>
