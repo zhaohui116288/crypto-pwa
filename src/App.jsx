@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react'
+ import React, { useState, useEffect } from 'react'
 import CryptoRankings from './components/MarketRanking/CryptoRankings'
-import OnChainRanking from './components/MarketRanking/OnChainRanking'
 import NewsModule from './components/News/NewsModule'
 import SettingsModule from './components/Settings/SettingsModule'
 import Navigation from './components/Navigation/Navigation'
@@ -67,12 +66,6 @@ const App = () => {
       label: '市场排名',
       icon: '📈',
       component: <CryptoRankings />
-    },
-    onchain: {
-      id: 'onchain',
-      label: '链上数据',
-      icon: '🔗',
-      component: <OnChainRanking />
     },
     news: {
       id: 'news',

@@ -3,7 +3,6 @@
 const Navigation = ({ activeModule, setActiveModule }) => {
   const navItems = [
     { id: 'market', label: '市场排名', icon: '📈' },
-    { id: 'onchain', label: '链上数据', icon: '🔗' },
     { id: 'news', label: '新闻资讯', icon: '📰' },
     { id: 'settings', label: '设置', icon: '⚙️' }
   ]
